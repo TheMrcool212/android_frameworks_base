@@ -27,6 +27,7 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
+import android.util.Log;
 import com.android.systemui.R;
 import com.android.systemui.recents.Constants;
 import com.android.systemui.recents.RecentsConfiguration;
@@ -477,6 +478,41 @@ public class TaskStackView extends FrameLayout implements TaskStack.TaskStackCal
         Task t = mStack.getTasks().get(mFocusedTaskIndex);
         TaskView tv = getChildViewForTask(t);
         tv.dismissTask();
+    }
+
+    public void clearRecents() {
+        post(new Runnable() {
+            @Override
+            public void run() {
+                ArrayList<Task> tasks = new ArrayList<Task>();
+                tasks.addAll(mStack.getTasks());
+                if (tasks.size() > 1) {
+                    // Ignore the last app
+                    Task lastAppTask = tasks.get(tasks.size() - 1);
+                    tasks.remove(lastAppTask);
+                }
+
+                // Remove visible TaskViews
+                int childCount = getChildCount();
+                if (childCount > 1) childCount--;
+                for (int i = 0; i < childCount; i++) {
+                    TaskView tv = (TaskView) getChildAt(i);
+                    tasks.remove(tv.getTask());
+                    tv.dismissTask();
+                }
+
+                int size = tasks.size();
+                if (size > 0) {
+                    // Remove any other Tasks
+                    for (int i = 0; i < size; i++) {
+                        Task t = tasks.get(i);
+                        if (mStack.getTasks().contains(t)) {
+                            mStack.removeTask(t);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     @Override
